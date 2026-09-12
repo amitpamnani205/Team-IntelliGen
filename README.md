@@ -40,8 +40,9 @@ Uncertainty Estimation → Risk Engine → Decision Engine → Operator Dashboar
 
 ```
 IntelliGen/
-├── backend/    # Python API — data pipeline, forecasting, risk & decision engines
+├── backend/    # Python API — serves forecasts, risk & decision engines, scenario simulation
 ├── frontend/   # React dashboard — forecast, risk timeline, recommendations, scenario simulator
+├── ml/         # Model training pipeline — data processing, features, persistence/XGBoost models
 └── README.md
 ```
 
