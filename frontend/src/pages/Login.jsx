@@ -1,20 +1,37 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
+import { SignIn } from "@clerk/clerk-react";
 import Logo from "../components/Logo.jsx";
 
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "#1688F5",
+    colorBackground: "transparent",
+    colorText: "#FFFFFF",
+    colorTextSecondary: "#8FA7C1",
+    colorInputBackground: "rgba(255,255,255,0.05)",
+    colorInputText: "#FFFFFF",
+    borderRadius: "0.5rem",
+  },
+  elements: {
+    rootBox: "w-full",
+    card: "w-full bg-transparent shadow-none border-none p-0",
+    header: "hidden",
+    footer: "text-[#8FA7C1]",
+    footerActionLink: "text-[#48C7FF] hover:text-[#38A3FF]",
+    formButtonPrimary:
+      "bg-gradient-to-r from-[#1688F5] to-[#38A3FF] hover:brightness-110 shadow-lg shadow-blue-900/40 text-sm normal-case",
+    formFieldInput: "border-white/15 focus:border-[#38A3FF] focus:ring-[#38A3FF]/15",
+    formFieldLabel: "text-white/80",
+    dividerLine: "bg-white/10",
+    dividerText: "text-[#8FA7C1]",
+    socialButtonsBlockButton: "border-white/15 hover:bg-white/5 text-white",
+    identityPreviewEditButton: "text-[#48C7FF]",
+  },
+};
+
 export default function Login() {
-  const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "" });
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    navigate("/dashboard");
-  }
-
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050D1A] px-6">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050D1A] px-6 py-14">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -34,64 +51,18 @@ export default function Login() {
 
         <h1 className="text-2xl font-bold text-white">Welcome back</h1>
         <p className="mt-1.5 text-sm text-[#8FA7C1]">
-          Enter your credentials to access the Command Center
+          Sign in to access the Command Center
         </p>
 
-        <form className="mt-8 flex flex-col gap-5" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-xs font-bold text-white/80">
-              Work Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              placeholder="dhruv@yourorg.com"
-              value={form.email}
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-              className="mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#38A3FF] focus:ring-4 focus:ring-[#38A3FF]/15"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-xs font-bold text-white/80">
-              Password
-            </label>
-            <div className="relative mt-2">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                required
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 pr-11 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#38A3FF] focus:ring-4 focus:ring-[#38A3FF]/15"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-lg bg-gradient-to-r from-[#1688F5] to-[#38A3FF] py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:brightness-110"
-          >
-            Sign In to Command Center
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-[#8FA7C1]">
-          Don't have an account?{" "}
-          <Link to="/signup" className="font-semibold text-[#48C7FF] hover:underline">
-            Create one
-          </Link>
-        </p>
+        <div className="mt-8">
+          <SignIn
+            routing="path"
+            path="/login"
+            signUpUrl="/signup"
+            afterSignInUrl="/dashboard"
+            appearance={clerkAppearance}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,16 +1,26 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { LogOut, Bell, Shield, Mail } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 
 export default function Profile() {
-  const navigate = useNavigate();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [form, setForm] = useState({
-    name: "Dhruv Parmar",
-    email: "dhruv@intelligen.io",
+    name: "",
+    email: "",
     org: "Grid Ops User",
     role: "Grid Operator",
   });
+
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      name: user.fullName || "",
+      email: user.primaryEmailAddress?.emailAddress || "",
+    }));
+  }, [user]);
   const [notifications, setNotifications] = useState({
     riskAlerts: true,
     dailyDigest: true,
@@ -28,8 +38,12 @@ export default function Profile() {
     setSaved(false);
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault();
+    if (user) {
+      const [firstName, ...rest] = form.name.trim().split(" ");
+      await user.update({ firstName, lastName: rest.join(" ") });
+    }
     setSaved(true);
   }
 
@@ -40,8 +54,12 @@ export default function Profile() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[#1688F5] to-[#0A4B8C] text-lg font-bold text-white">
-              DP
+            <div className="mx-auto grid h-16 w-16 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[#1688F5] to-[#0A4B8C] text-lg font-bold text-white">
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt={form.name} className="h-full w-full object-cover" />
+              ) : (
+                form.name.slice(0, 2).toUpperCase() || "??"
+              )}
             </div>
             <p className="mt-4 font-bold text-slate-900">{form.name}</p>
             <p className="text-sm text-slate-500">{form.role}</p>
@@ -51,7 +69,7 @@ export default function Profile() {
             </p>
 
             <button
-              onClick={() => navigate("/")}
+              onClick={() => signOut()}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -69,7 +87,14 @@ export default function Profile() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Full Name" value={form.name} onChange={(v) => update("name", v)} />
-              <Field label="Work Email" value={form.email} onChange={(v) => update("email", v)} type="email" />
+              <Field
+                label="Work Email"
+                value={form.email}
+                onChange={(v) => update("email", v)}
+                type="email"
+                disabled
+                hint="Managed by your account — change it from your Clerk user profile"
+              />
               <Field label="Organization" value={form.org} onChange={(v) => update("org", v)} />
               <Field label="Role" value={form.role} onChange={(v) => update("role", v)} />
             </div>
@@ -117,16 +142,18 @@ export default function Profile() {
   );
 }
 
-function Field({ label, value, onChange, type = "text" }) {
+function Field({ label, value, onChange, type = "text", disabled = false, hint }) {
   return (
     <div>
       <label className="block text-xs font-bold text-slate-700">{label}</label>
       <input
         type={type}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+        className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400"
       />
+      {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
     </div>
   );
 }

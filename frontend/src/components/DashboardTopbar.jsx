@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { Sun, Calendar, Clock, ChevronDown, Search, Bell, Check, User, Settings, LogOut } from "lucide-react";
 import useClickOutside from "../hooks/useClickOutside.js";
 
@@ -15,8 +16,20 @@ const NOTIFICATIONS = [
   { title: "Model v2.10 recalibrated", time: "1 hr ago" },
 ];
 
+function getInitials(user) {
+  if (!user) return "??";
+  const first = user.firstName?.[0] ?? "";
+  const last = user.lastName?.[0] ?? "";
+  if (first || last) return `${first}${last}`.toUpperCase();
+  const email = user.primaryEmailAddress?.emailAddress ?? "";
+  return email.slice(0, 2).toUpperCase() || "??";
+}
+
 export default function DashboardTopbar() {
   const navigate = useNavigate();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const displayName = user?.fullName || user?.primaryEmailAddress?.emailAddress || "Account";
   const [values, setValues] = useState(SELECTORS.map((s) => s.options[0]));
   const [openIndex, setOpenIndex] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -101,16 +114,22 @@ export default function DashboardTopbar() {
         <div ref={profileRef} className="relative">
           <button
             onClick={() => setProfileOpen((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#1688F5] to-[#0A4B8C] text-xs font-bold text-white"
+            className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[#1688F5] to-[#0A4B8C] text-xs font-bold text-white"
           >
-            DP
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt={displayName} className="h-full w-full object-cover" />
+            ) : (
+              getInitials(user)
+            )}
           </button>
 
           {profileOpen && (
             <div className="absolute right-0 top-full z-20 mt-1.5 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
               <div className="border-b border-slate-100 px-3.5 py-2.5">
-                <p className="text-sm font-semibold text-slate-900">Dhruv Parmar</p>
-                <p className="text-xs text-slate-400">Grid Operator</p>
+                <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                <p className="truncate text-xs text-slate-400">
+                  {user?.primaryEmailAddress?.emailAddress}
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -135,7 +154,7 @@ export default function DashboardTopbar() {
               <button
                 onClick={() => {
                   setProfileOpen(false);
-                  navigate("/");
+                  signOut();
                 }}
                 className="flex w-full items-center gap-2.5 border-t border-slate-100 px-3.5 py-2.5 text-left text-xs font-medium text-rose-600 hover:bg-rose-50"
               >
