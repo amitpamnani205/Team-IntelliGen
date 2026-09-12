@@ -1,6 +1,6 @@
 import { MapPin } from "lucide-react";
 
-export default function LivePlantView() {
+export default function LivePlantView({ currentOutputLabel = "—" }) {
   return (
     <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -27,7 +27,7 @@ export default function LivePlantView() {
           <MapPin className="h-4 w-4 shrink-0 text-blue-300" />
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-white">Solar Plant A</p>
-            <p className="text-[11px] font-mono text-white/70">780 MW</p>
+            <p className="text-[11px] font-mono text-white/70">{currentOutputLabel}</p>
           </div>
         </div>
       </div>

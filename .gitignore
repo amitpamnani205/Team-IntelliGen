@@ -8,14 +8,8 @@ venv/
 node_modules/
 dist/
 
-# ML data & artifacts
-ml/data/raw/*
-!ml/data/raw/.gitkeep
-ml/data/processed/*
-!ml/data/processed/.gitkeep
-ml/artifacts/*
-!ml/artifacts/.gitkeep
 .ipynb_checkpoints/
+ml/anaconda_projects/
 
 # Env
 .env

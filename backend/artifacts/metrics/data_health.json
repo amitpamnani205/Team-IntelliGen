@@ -1,0 +1,14 @@
+{
+    "initial_rows": 17544,
+    "final_rows": 17544,
+    "duplicates_removed": 0,
+    "missing_values_filled": 0,
+    "negative_generation_corrected": 0,
+    "over_capacity_capped": 0,
+    "nighttime_generation_corrected": 0,
+    "date_range": [
+        "2019-01-01T00:00:00",
+        "2020-12-31T23:00:00"
+    ],
+    "completeness_pct": 100.0
+}

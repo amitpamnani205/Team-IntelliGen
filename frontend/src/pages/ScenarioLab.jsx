@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { LayoutDashboard, CloudFog, TrendingUp, BatteryCharging, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { LayoutDashboard, CloudFog, BatteryWarning, ArrowUpRightFromCircle, Check } from "lucide-react";
 import {
   ComposedChart,
   Line,
@@ -11,8 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import PageHeader from "../components/PageHeader.jsx";
-
-const HORIZONS = ["24h", "48h", "7d"];
+import { runScenario, mwToKw } from "../lib/api.js";
 
 const SCENARIOS = [
   {
@@ -20,7 +19,7 @@ const SCENARIOS = [
     icon: LayoutDashboard,
     label: "Base Case",
     sub: "Current forecast",
-    factor: 1,
+    params: {},
     color: "#2563EB",
     dashed: false,
     locked: true,
@@ -29,84 +28,83 @@ const SCENARIOS = [
     id: "cloud",
     icon: CloudFog,
     label: "High Cloud Cover",
-    sub: "-20% generation",
-    factor: 0.8,
+    sub: "-30% generation",
+    params: { solarChangePercent: -30 },
     color: "#D97706",
     dashed: true,
   },
   {
-    id: "demand",
-    icon: TrendingUp,
-    label: "High Demand",
-    sub: "+25% demand",
-    factor: 1.15,
+    id: "battery_outage",
+    icon: BatteryWarning,
+    label: "Battery Outage",
+    sub: "-100% storage capacity",
+    params: { batteryChangePercent: -100 },
     color: "#E11D48",
     dashed: true,
   },
   {
-    id: "storage",
-    icon: BatteryCharging,
-    label: "Storage Support",
-    sub: "100 MW absorption",
-    factor: 0.88,
+    id: "export_boost",
+    icon: ArrowUpRightFromCircle,
+    label: "Export Capacity Boost",
+    sub: "+100% export capacity",
+    params: { exportChangePercent: 100 },
     color: "#0EA5E9",
     dashed: true,
   },
 ];
 
-function gaussian(x, center, width) {
-  return Math.exp(-(((x - center) / width) ** 2));
-}
-
-function buildBase(hours, peakCenters) {
-  const points = [];
-  for (let i = 0; i <= hours; i += 1) {
-    const shape = Math.max(...peakCenters.map((c) => gaussian(i, c, 4.2)));
-    points.push({ x: i, base: Math.round(Math.max(2, 900 * shape)) });
-  }
-  return points;
-}
-
-const BASE_DATA = {
-  "24h": () => buildBase(24, [13]),
-  "48h": () => buildBase(48, [13, 37]),
-  "7d": () =>
-    [810, 860, 720, 890, 840, 780, 830].map((base, i) => ({ x: i, base })),
-};
-
-const TICKS = {
-  "24h": { ticks: [0, 4, 8, 12, 16, 20, 24], format: (h) => `${String(h).padStart(2, "0")}:00` },
-  "48h": { ticks: [0, 6, 12, 18, 24, 30, 36, 42, 48], format: (h) => `${String(h % 24).padStart(2, "0")}:00` },
-  "7d": { ticks: [0, 1, 2, 3, 4, 5, 6], format: (i) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i] },
-};
+const TICKS = [0, 4, 8, 12, 16, 20, 23];
 
 export default function ScenarioLab() {
-  const [horizon, setHorizon] = useState("24h");
-  const [active, setActive] = useState(() => new Set(["base", "cloud", "demand"]));
+  const [active, setActive] = useState(() => new Set(["base", "cloud"]));
+  const [results, setResults] = useState({});
+  const [error, setError] = useState(null);
 
-  const baseData = useMemo(() => BASE_DATA[horizon](), [horizon]);
-  const tickConfig = TICKS[horizon];
+  const activeScenarios = useMemo(() => SCENARIOS.filter((s) => active.has(s.id)), [active]);
 
-  const chartData = useMemo(
-    () =>
-      baseData.map((row) => {
-        const point = { x: row.x };
-        SCENARIOS.forEach((s) => {
-          if (active.has(s.id)) point[s.id] = Math.round(row.base * s.factor);
-        });
-        return point;
-      }),
-    [baseData, active]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const entries = await Promise.all(
+          activeScenarios.map(async (s) => [s.id, await runScenario(s.params)])
+        );
+        if (!cancelled) setResults(Object.fromEntries(entries));
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Array.from(active).sort().join(",")]);
 
-  const peaks = useMemo(() => {
-    const result = {};
-    SCENARIOS.forEach((s) => {
-      if (!active.has(s.id)) return;
-      result[s.id] = Math.max(...chartData.map((row) => row[s.id] ?? 0));
+  const chartData = useMemo(() => {
+    const anyResult = Object.values(results)[0];
+    if (!anyResult) return [];
+    return anyResult.map((row, i) => {
+      const point = { x: i, label: row.timestamp.slice(11, 16) };
+      activeScenarios.forEach((s) => {
+        const r = results[s.id]?.[i];
+        if (r) point[s.id] = Number(mwToKw(r.generation).toFixed(2));
+      });
+      return point;
     });
-    return result;
-  }, [chartData, active]);
+  }, [results, activeScenarios]);
+
+  const summary = useMemo(() => {
+    const out = {};
+    activeScenarios.forEach((s) => {
+      const rows = results[s.id];
+      if (!rows) return;
+      const peak = Math.max(...rows.map((r) => mwToKw(r.generation)));
+      const worst = rows.reduce((max, r) => (r.risk_score > max.risk_score ? r : max), rows[0]);
+      out[s.id] = { peak, worstLevel: worst.risk_level };
+    });
+    return out;
+  }, [results, activeScenarios]);
 
   function toggleScenario(id) {
     if (id === "base") return;
@@ -121,23 +119,14 @@ export default function ScenarioLab() {
     <div className="px-5 py-6 sm:px-8 sm:py-8">
       <PageHeader
         title="Scenario Lab"
-        subtitle="Test scenarios and understand potential outcomes."
-        actions={
-          <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
-            {HORIZONS.map((h) => (
-              <button
-                key={h}
-                onClick={() => setHorizon(h)}
-                className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
-                  horizon === h ? "bg-blue-600 text-white" : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                {h}
-              </button>
-            ))}
-          </div>
-        }
+        subtitle="Re-run the risk engine under hypothetical solar, battery and export conditions."
       />
+
+      {error && (
+        <p className="mb-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          Couldn't reach the backend ({error}).
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <div className="lg:col-span-4">
@@ -189,61 +178,65 @@ export default function ScenarioLab() {
             <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-bold text-slate-900">Scenario Comparison</h3>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                {SCENARIOS.filter((s) => active.has(s.id)).map((s) => (
+                {activeScenarios.map((s) => (
                   <span key={s.id} className="flex items-center gap-1.5">
                     <span className="font-mono font-semibold" style={{ color: s.color }}>
-                      {peaks[s.id]} MW
+                      {summary[s.id] ? `${summary[s.id].peak.toFixed(1)} kW` : "…"}
                     </span>
                     peak · {s.label}
+                    {summary[s.id] && summary[s.id].worstLevel !== "LOW" && (
+                      <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">
+                        {summary[s.id].worstLevel}
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>
             </div>
-            <p className="mb-5 text-xs text-slate-500">Peak generation under each active scenario</p>
+            <p className="mb-5 text-xs text-slate-500">Forecast generation (kW) under each active scenario</p>
 
-            <div className="h-72 w-full sm:h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke="#EEF2F7" vertical={false} />
-                  <XAxis
-                    dataKey="x"
-                    type="number"
-                    domain={[0, chartData.length - 1]}
-                    ticks={tickConfig.ticks}
-                    tickFormatter={tickConfig.format}
-                    tick={{ fill: "#94A3B8", fontSize: 11 }}
-                    axisLine={{ stroke: "#E2E8F0" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 1200]}
-                    tick={{ fill: "#94A3B8", fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={44}
-                  />
-                  <Tooltip
-                    labelFormatter={tickConfig.format}
-                    contentStyle={{ borderRadius: 10, borderColor: "#E2E8F0", fontSize: 12 }}
-                  />
-                  <Legend
-                    formatter={(value) => SCENARIOS.find((s) => s.id === value)?.label ?? value}
-                    wrapperStyle={{ fontSize: 12, color: "#64748B" }}
-                  />
-                  {SCENARIOS.filter((s) => active.has(s.id)).map((s) => (
-                    <Line
-                      key={s.id}
-                      dataKey={s.id}
-                      stroke={s.color}
-                      strokeWidth={s.id === "base" ? 2.5 : 2}
-                      strokeDasharray={s.dashed ? "5 4" : undefined}
-                      dot={false}
-                      isAnimationActive={false}
+            {chartData.length === 0 ? (
+              <div className="h-72 animate-pulse rounded-xl bg-slate-50 sm:h-80" />
+            ) : (
+              <div className="h-72 w-full sm:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={chartData} margin={{ top: 8, right: 14, left: -12, bottom: 0 }}>
+                    <CartesianGrid stroke="#EEF2F7" vertical={false} />
+                    <XAxis
+                      dataKey="x"
+                      type="number"
+                      domain={[0, chartData.length - 1]}
+                      ticks={TICKS.filter((t) => t < chartData.length)}
+                      tickFormatter={(i) => chartData[i]?.label ?? ""}
+                      tick={{ fill: "#94A3B8", fontSize: 11 }}
+                      axisLine={{ stroke: "#E2E8F0" }}
+                      tickLine={false}
                     />
-                  ))}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+                    <YAxis tick={{ fill: "#94A3B8", fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
+                    <Tooltip
+                      labelFormatter={(i) => chartData[i]?.label ?? ""}
+                      contentStyle={{ borderRadius: 10, borderColor: "#E2E8F0", fontSize: 12 }}
+                    />
+                    <Legend
+                      formatter={(value) => SCENARIOS.find((s) => s.id === value)?.label ?? value}
+                      wrapperStyle={{ fontSize: 12, color: "#64748B" }}
+                    />
+                    {activeScenarios.map((s) => (
+                      <Line
+                        key={s.id}
+                        dataKey={s.id}
+                        stroke={s.color}
+                        strokeWidth={s.id === "base" ? 2.5 : 2}
+                        strokeDasharray={s.dashed ? "5 4" : undefined}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                      />
+                    ))}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
       </div>

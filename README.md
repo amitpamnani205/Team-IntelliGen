@@ -11,7 +11,7 @@
 [![Status](https://img.shields.io/badge/status-ideation_%2B_working_scaffold-C97A16?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/stack-Python_%7C_XGBoost_%7C_React-285D82?style=flat-square)](#)
 
-[**Live Pitch Page**](https://claude.ai/code/artifact/c9c48696-9538-4703-b725-3f54d5ccd609) · [Backend](./backend) · [Frontend](./frontend) · [ML Pipeline](./ml)
+[**Live Pitch Page**](https://claude.ai/code/artifact/c9c48696-9538-4703-b725-3f54d5ccd609) · [Backend](./backend) · [Frontend](./frontend)
 
 </div>
 
@@ -95,9 +95,9 @@ flowchart LR
 
 ```
 IntelliGen/
-├── backend/    # Python API — serves forecasts, risk & decision engines, scenario simulation
+├── backend/    # Python API + ML pipeline — data processing, XGBoost forecaster,
+│               # risk & decision engines, scenario simulation
 ├── frontend/   # React dashboard + landing/pitch page
-├── ml/         # Training pipeline — data processing, features, persistence/XGBoost models
 └── README.md
 ```
 
@@ -133,28 +133,24 @@ The platform is evaluated on more than "how accurate is the model" — on how us
 
 ## Quickstart
 
-**Backend**
+**Backend** (run from the repository root)
 ```bash
-cd backend
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-**ML pipeline**
-```bash
-cd ml
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-python -m src.train --data data/raw/solar_generation.csv --capacity 1000
+python3 -m venv backend/venv && source backend/venv/bin/activate
+pip install -r backend/requirements.txt
+python backend/download_data.py            # fetch sample PVGIS dataset
+python -m backend.ml.preprocessing          # clean + resample
+python -m backend.ml.train                  # train XGBoost, save artifacts
+uvicorn backend.app.main:app --reload       # serve the API on :8000
 ```
 
 **Frontend**
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                                 # serves on :5173, proxies to the API on :8000
 ```
+
+See [backend/README.md](./backend/README.md) for endpoint details.
 
 ## Roadmap
 
