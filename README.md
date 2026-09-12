@@ -19,37 +19,37 @@
 
 ## The one-line pitch
 
-Renewable forecasting is a crowded problem — plenty of teams will show you a curve that predicts megawatts. **IntelliGen predicts the operational risk that curve creates, and tells the operator what to do about it, before it happens.** Forecast → Risk → Recommendation, not forecast alone.
+**IntelliGen predicts the operational risk renewable generation creates, and tells the operator what to do about it, before it happens.** Forecast → Risk → Recommendation, not forecast alone.
 
 ## Table of Contents
 
-- [Why This, Not Another Forecasting Dashboard](#why-this-not-another-forecasting-dashboard)
+- [From Forecast to Intelligence](#from-forecast-to-intelligence)
 - [The Problem](#the-problem)
 - [How It Works](#how-it-works)
 - [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Risk Categories](#risk-categories)
 - [MVP Scope](#mvp-scope)
-- [Mapped to What Judges Actually Score](#mapped-to-what-judges-actually-score)
+- [Evaluation Metrics](#evaluation-metrics)
 - [Quickstart](#quickstart)
 - [Roadmap](#roadmap)
 - [Design Boundary](#design-boundary)
 - [Team](#team)
 
-## Why This, Not Another Forecasting Dashboard
+## From Forecast to Intelligence
 
-Most submissions to this theme will converge on the same shape: ingest weather data, train a model, plot predicted vs. actual generation. That's a forecasting exercise, not a grid-operations tool — and it's also, statistically, what most of the other 200 teams will build. Here's the layer we add on top of it:
+A forecast becomes valuable when it changes a decision. Ingesting weather data, training a model, and plotting predicted vs. actual generation is a necessary first step — IntelliGen treats it as the first of three layers, not the whole product.
 
-| What a typical forecasting submission ships | What IntelliGen ships |
+| Forecasting alone | Forecasting + risk intelligence |
 |---|---|
 | A single predicted value ("600 MW at 16:00") | A predicted value **+ a calibrated uncertainty band** ("600 MW, plausible range 520–680 MW") |
 | A chart of predicted vs. actual generation | A chart that also plots **demand, and shades where generation and demand diverge** |
 | A generic high/low generation alert | A **risk score computed from forecast uncertainty *and* available flexibility** — the same 100 MW error is LOW risk with 500 MW of spare battery and CRITICAL with 50 MW |
-| "Here's our forecast" | "Here's our forecast, here's *why* the risk changed, and here's the ranked sequence of actions to prepare for it" |
-| A static demo | A **live scenario simulator** — drop solar 30% in front of the judges and watch risk, storage requirement, and backup need recompute in real time |
+| A number on a dashboard | The number, *why* the risk changed, and the ranked sequence of actions to prepare for it |
+| A static demo | A **live scenario simulator** — drop solar 30% and watch risk, storage requirement, and backup need recompute |
 | Accuracy (MAE/RMSE) as the only metric | Forecast quality **+ uncertainty calibration + surplus/deficit detection accuracy + false-alert rate** |
 
-The differentiator isn't a better model — it's refusing to stop at the model. See it live: **[the pitch page](https://claude.ai/code/artifact/c9c48696-9538-4703-b725-3f54d5ccd609)** walks through the gap, the loop, a mock operator screen, and the what-if simulator in about 60 seconds.
+Walk through it live: **[the pitch page](https://claude.ai/code/artifact/c9c48696-9538-4703-b725-3f54d5ccd609)** covers the gap, the loop, a mock operator screen, and the what-if simulator in about 60 seconds.
 
 ## The Problem
 
@@ -120,15 +120,16 @@ Ambitious in intelligence, disciplined in engineering — the goal is to prove t
 - **Data:** Public/historical generation + weather datasets/APIs; demand, storage, and export constraints are simulated and **explicitly labelled as such**
 - **No** Kubernetes, microservices, blockchain, custom IoT/satellite hardware, or autonomous control — none of it moves the needle on forecast quality, risk detection, or operator decisions
 
-## Mapped to What Judges Actually Score
+## Evaluation Metrics
 
-| Criterion | Where IntelliGen delivers |
+The platform is evaluated on more than "how accurate is the model" — on how useful the prediction is for a real operational decision.
+
+| Dimension | Metrics |
 |---|---|
-| **Innovation** | Full forecast → risk → decision loop, not an isolated prediction model |
-| **Technical depth** | Quantile XGBoost for calibrated intervals, separable forecast/risk/decision engines, a real repo with backend + ml + frontend, not slides |
-| **Feasibility** | Solar-only, 24–72h MVP on public data; every feature justified against "does it improve forecast, risk detection, or the operator's decision?" |
-| **Impact** | Less curtailment, less fossil backup dependence, better storage utilization, more predictable renewable integration |
-| **Presentation** | A live, interactive pitch page and scenario simulator a judge can drive themselves — not a static deck |
+| Forecast quality | MAE, RMSE, MAPE |
+| Uncertainty quality | Prediction interval coverage, calibration, interval width |
+| Risk quality | Surplus/deficit detection accuracy, false-alert rate |
+| Product quality | Recommendation response time, scenario recalculation time, operator interpretability |
 
 ## Quickstart
 
