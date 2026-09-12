@@ -1,0 +1,493 @@
+<title>IntelliGen</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF3EF;
+    --surface: #FFFFFF;
+    --surface-2: #E3ECE6;
+    --text: #10241F;
+    --muted: #4B615C;
+    --border: rgba(16,36,31,0.14);
+    --accent-solar: #C97A16;
+    --accent-solar-soft: rgba(201,122,22,0.16);
+    --accent-grid: #285D82;
+    --accent-grid-soft: rgba(40,93,130,0.14);
+    --risk-low: #2E7D4F;
+    --risk-medium: #A9791C;
+    --risk-high: #B85A1E;
+    --risk-critical: #A63A3A;
+    --shadow: 0 1px 2px rgba(16,36,31,0.06), 0 8px 24px -12px rgba(16,36,31,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1D22;
+      --surface: #12292F;
+      --surface-2: #17333A;
+      --text: #E9F3EF;
+      --muted: #9FB8B2;
+      --border: rgba(233,243,239,0.14);
+      --accent-solar: #F0A63C;
+      --accent-solar-soft: rgba(240,166,60,0.16);
+      --accent-grid: #6FA8D8;
+      --accent-grid-soft: rgba(111,168,216,0.16);
+      --risk-low: #5FBE83;
+      --risk-medium: #E3C24E;
+      --risk-high: #E88A3D;
+      --risk-critical: #E2615F;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1D22;
+    --surface: #12292F;
+    --surface-2: #17333A;
+    --text: #E9F3EF;
+    --muted: #9FB8B2;
+    --border: rgba(233,243,239,0.14);
+    --accent-solar: #F0A63C;
+    --accent-solar-soft: rgba(240,166,60,0.16);
+    --accent-grid: #6FA8D8;
+    --accent-grid-soft: rgba(111,168,216,0.16);
+    --risk-low: #5FBE83;
+    --risk-medium: #E3C24E;
+    --risk-high: #E88A3D;
+    --risk-critical: #E2615F;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+    padding-inline: 20px;
+  }
+  h1, h2, h3 { font-family: "Big Shoulders Display", "Arial Narrow", sans-serif; font-weight: 800; text-wrap: balance; letter-spacing: 0.2px; margin: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-grid);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 20px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .measure { max-width: 62ch; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 14px;
+    gap: 16px;
+  }
+  .wordmark { font-family: "Big Shoulders Display", sans-serif; font-weight: 900; font-size: 22px; letter-spacing: 0.02em; }
+  .wordmark span { color: var(--accent-solar); }
+  .navlinks { display: flex; gap: 22px; font-size: 13px; font-weight: 500; flex-wrap: wrap; }
+  .navlinks a { text-decoration: none; color: var(--muted); }
+  .navlinks a:hover { color: var(--text); }
+
+  /* ---- hero ---- */
+  .hero { padding-block: 64px 40px; display: flex; flex-direction: column; gap: 22px; }
+  .hero h1 { font-size: clamp(2.4rem, 5.5vw, 4.3rem); line-height: 0.98; }
+  .hero-sub { font-size: 17px; color: var(--muted); }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .stat-chip {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stat-chip b { font-family: "Big Shoulders Display", sans-serif; font-size: 15px; color: var(--accent-solar); }
+
+  /* ---- chart ---- */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 22px 14px;
+    box-shadow: var(--shadow);
+    margin-top: 8px;
+  }
+  .chart-scroll { overflow-x: auto; }
+  .chart-scroll svg { width: 100%; min-width: 640px; height: auto; display: block; }
+  .chart-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  .chart-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .swatch.dash { background: none; border-top: 2px dashed var(--muted); width: 16px; height: 0; }
+
+  /* ---- sections ---- */
+  section { padding-block: 56px; border-top: 1px solid var(--border); }
+  section > .eyebrow { margin-bottom: 14px; }
+  .section-title { font-size: clamp(1.6rem, 3vw, 2.3rem); margin-bottom: 10px; }
+  .section-lede { color: var(--muted); max-width: 62ch; margin-bottom: 32px; }
+
+  /* ---- gap / quote contrast ---- */
+  .contrast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .contrast-grid { grid-template-columns: 1fr; } }
+  .contrast-card { border: 1px solid var(--border); border-radius: 12px; padding: 22px; background: var(--surface); }
+  .contrast-card.dim { opacity: 0.82; }
+  .contrast-card.lit { border-color: color-mix(in srgb, var(--accent-solar) 55%, var(--border)); box-shadow: var(--shadow); }
+  .contrast-label { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: block; }
+  .contrast-card.lit .contrast-label { color: var(--accent-solar); }
+  .contrast-card p { font-family: "IBM Plex Mono", monospace; font-size: 14px; line-height: 1.6; margin: 0; }
+  .contrast-card .risk-tag { color: var(--risk-high); font-weight: 600; }
+
+  /* ---- intelligence loop flow ---- */
+  .flow-figure { margin: 0; }
+  .flow-figure svg { width: 100%; height: auto; display: block; }
+  .flow-figure figcaption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .loop-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 28px; }
+  @media (max-width: 720px) { .loop-steps { grid-template-columns: 1fr; } }
+  .loop-step { border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: var(--surface); }
+  .loop-num { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--accent-grid); }
+  .loop-step h3 { font-size: 22px; margin: 6px 0 8px; }
+  .loop-step p { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* ---- dashboard glimpse ---- */
+  .dash-mock { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+  .dash-mock-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .dash-mock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .dash-mock-title { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); margin-left: 4px; }
+  .dash-mock-body { padding: 22px; display: flex; flex-direction: column; gap: 22px; }
+
+  .status-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .status-row { grid-template-columns: repeat(2, 1fr); } }
+  .status-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .status-card .k { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+  .status-card .v { font-family: "Big Shoulders Display", sans-serif; font-size: 22px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .status-card.risk .v { color: var(--risk-high); }
+
+  .timeline { }
+  .timeline .k { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display:block; }
+  .timeline-track { display: flex; height: 22px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .timeline-track i { flex: 1; }
+  .timeline-hours { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+
+  .rec-card { border: 1px solid color-mix(in srgb, var(--risk-high) 45%, var(--border)); border-radius: 10px; padding: 16px 18px; background: color-mix(in srgb, var(--risk-high) 7%, var(--surface)); }
+  .rec-card .rec-tag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--risk-high); font-weight: 600; }
+  .rec-card .rec-window { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+  .rec-card p { margin: 10px 0 12px; font-size: 14.5px; }
+  .rec-steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+  .rec-steps li { font-size: 12.5px; border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; background: var(--surface); }
+  .rec-steps li b { color: var(--accent-solar); font-family: "IBM Plex Mono", monospace; margin-right: 6px; }
+  .why-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .why-chips span { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 4px 9px; }
+
+  /* ---- scenario ---- */
+  .scenario-toggle { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; background: var(--surface); font-family: "IBM Plex Mono", monospace; font-size: 13px; margin-bottom: 24px; }
+  .scenario-toggle .dial { width: 34px; height: 18px; border-radius: 999px; background: var(--accent-solar-soft); position: relative; }
+  .scenario-toggle .dial::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-solar); top: 2px; right: 2px; }
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .scenario-grid { grid-template-columns: 1fr; } }
+  .scenario-card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: var(--surface); }
+  .scenario-card.whatif { border-color: color-mix(in srgb, var(--risk-high) 50%, var(--border)); }
+  .scenario-card h4 { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+  .scenario-card.whatif h4 { color: var(--risk-high); }
+  .metric-row { display: flex; justify-content: space-between; align-items: baseline; padding-block: 9px; border-top: 1px solid var(--border); }
+  .metric-row:first-of-type { border-top: none; }
+  .metric-row .m-label { font-size: 13px; color: var(--muted); }
+  .metric-row .m-value { font-family: "Big Shoulders Display", sans-serif; font-size: 19px; font-variant-numeric: tabular-nums; }
+  .metric-row .m-value.crit { color: var(--risk-high); }
+
+  /* ---- comparison ---- */
+  .compare-list { display: flex; flex-direction: column; gap: 10px; }
+  .compare-row { display: grid; grid-template-columns: 1fr 28px 1fr; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  @media (max-width: 640px) { .compare-row { grid-template-columns: 1fr; gap: 6px; } .compare-row .arrow { display: none; } }
+  .compare-row .old { color: var(--muted); font-size: 14px; }
+  .compare-row .new { font-size: 14px; font-weight: 600; }
+  .compare-row .arrow { color: var(--accent-grid); text-align: center; }
+
+  /* ---- footer ---- */
+  footer { padding-block: 44px 60px; border-top: 1px solid var(--border); }
+  .boundary-note { display: flex; gap: 14px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); margin-bottom: 32px; font-size: 13.5px; color: var(--muted); }
+  .boundary-note b { color: var(--text); }
+  .footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--muted); }
+  .footer-row a { text-decoration: underline; text-underline-offset: 3px; }
+</style>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="wordmark">Intelli<span>Gen</span></div>
+    <nav class="navlinks">
+      <a href="#gap">The Gap</a>
+      <a href="#loop">Intelligence Loop</a>
+      <a href="#dashboard">Operator View</a>
+      <a href="#scenario">What-If</a>
+      <a href="https://github.com/amitpamnani205/Team-IntelliGen">GitHub ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section class="hero" style="border-top:none;">
+    <p class="eyebrow">HACKOUT '26 · RENEWABLE ENERGY INTELLIGENCE · TEAM INTELLIGEN</p>
+    <h1>We don't forecast sunshine.<br>We forecast what it costs the grid.</h1>
+    <p class="hero-sub measure">IntelliGen predicts solar and wind generation 24–72 hours out, quantifies how uncertain that forecast really is, and tells operators exactly when to charge storage, export, or prep backup — before a surplus or deficit ever hits the grid.</p>
+    <div class="stat-row">
+      <span class="stat-chip"><b>24–72h</b> forecast horizon</span>
+      <span class="stat-chip"><b>4</b> risk tiers: low / medium / high / critical</span>
+      <span class="stat-chip"><b>3</b> engines: forecast → risk → decision</span>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-scroll">
+        <svg viewBox="0 0 960 400" role="img" aria-label="A 24-hour chart showing forecast solar generation rising to a midday peak near 680 megawatts while grid demand stays lower, creating a surplus zone around midday, then generation falls toward evening while demand rises to a peak near 600 megawatts, creating a deficit zone in the evening.">
+          <line x1="70" y1="330" x2="930" y2="330" stroke="currentColor" stroke-opacity="0.35"/>
+          <g stroke="currentColor" stroke-opacity="0.08">
+            <line x1="70" y1="230" x2="930" y2="230"/>
+            <line x1="70" y1="130" x2="930" y2="130"/>
+            <line x1="70" y1="30" x2="930" y2="30"/>
+          </g>
+          <g class="mono" font-size="11" fill="currentColor" fill-opacity="0.55" text-anchor="end">
+            <text x="60" y="333">0</text>
+            <text x="60" y="233">300</text>
+            <text x="60" y="133">600</text>
+            <text x="60" y="34">900 MW</text>
+          </g>
+          <g class="mono" font-size="11" fill="currentColor" fill-opacity="0.55" text-anchor="middle">
+            <text x="70" y="352">00:00</text>
+            <text x="213" y="352">04:00</text>
+            <text x="357" y="352">08:00</text>
+            <text x="500" y="352">12:00</text>
+            <text x="643" y="352">16:00</text>
+            <text x="787" y="352">20:00</text>
+            <text x="930" y="352">24:00</text>
+          </g>
+
+          <polygon points="70,330 141.7,330 213.3,330 285,323.3 356.7,270 428.3,170 500,103.3 571.7,113.3 643.3,190 715,303.3 786.7,330 858.3,330 930,330"
+                   fill="var(--accent-solar)" fill-opacity="0.16"/>
+
+          <polyline points="70,326.7 141.7,326.7 213.3,326.7 285,319.0 356.7,257.7 428.3,142.7 500,66.0 571.7,77.5 643.3,165.7 715,296.0 786.7,326.7 858.3,326.7 930,326.7"
+                     fill="none" stroke="var(--accent-solar)" stroke-opacity="0.5" stroke-width="1.3" stroke-dasharray="3 4"/>
+          <polyline points="70,333.3 141.7,333.3 213.3,333.3 285,327.6 356.7,282.3 428.3,197.3 500,140.7 571.7,149.2 643.3,214.3 715,310.7 786.7,330 858.3,330 930,330"
+                     fill="none" stroke="var(--accent-solar)" stroke-opacity="0.5" stroke-width="1.3" stroke-dasharray="3 4"/>
+
+          <polyline points="70,330 141.7,330 213.3,330 285,323.3 356.7,270 428.3,170 500,103.3 571.7,113.3 643.3,190 715,303.3 786.7,330 858.3,330 930,330"
+                     fill="none" stroke="var(--accent-solar)" stroke-width="3"/>
+
+          <polyline points="70,256.7 141.7,280 213.3,286.7 285,270 356.7,216.7 428.3,203.3 500,210 571.7,203.3 643.3,190 715,143.3 786.7,130 858.3,190 930,246.7"
+                     fill="none" stroke="var(--accent-grid)" stroke-width="3"/>
+
+          <g>
+            <circle cx="535" cy="157" r="4" fill="var(--accent-solar)"/>
+            <line x1="535" y1="153" x2="535" y2="70" stroke="var(--accent-solar)" stroke-opacity="0.6" stroke-width="1"/>
+            <text x="535" y="58" text-anchor="middle" fill="var(--accent-solar)" font-size="12" font-weight="600" class="mono">SURPLUS ZONE</text>
+            <text x="535" y="45" text-anchor="middle" fill="currentColor" fill-opacity="0.55" font-size="11" class="mono">generation &gt; demand</text>
+          </g>
+          <g>
+            <circle cx="750" cy="230" r="4" fill="var(--risk-high)"/>
+            <line x1="750" y1="234" x2="750" y2="372" stroke="var(--risk-high)" stroke-opacity="0.6" stroke-width="1"/>
+            <text x="750" y="386" text-anchor="middle" fill="var(--risk-high)" font-size="12" font-weight="600" class="mono">DEFICIT ZONE</text>
+            <text x="750" y="399" text-anchor="middle" fill="currentColor" fill-opacity="0.55" font-size="11" class="mono">demand &gt; generation</text>
+          </g>
+        </svg>
+      </div>
+      <div class="chart-legend">
+        <span><i class="swatch" style="background:var(--accent-solar)"></i>Forecast solar generation</span>
+        <span><i class="swatch" style="background:var(--accent-grid)"></i>Grid demand</span>
+        <span><i class="swatch dash"></i>Forecast uncertainty band</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="gap">
+    <p class="eyebrow">The Gap</p>
+    <h2 class="section-title">A number isn't a decision.</h2>
+    <p class="section-lede">Most forecasting tools stop at the prediction. Operators need the prediction priced against what the grid can actually absorb.</p>
+    <div class="contrast-grid">
+      <div class="contrast-card dim">
+        <span class="contrast-label">Conventional forecast</span>
+        <p>"Expected solar generation at 16:00 = 600 MW."</p>
+      </div>
+      <div class="contrast-card lit">
+        <span class="contrast-label">IntelliGen</span>
+        <p>Expected = 600 MW. Plausible range = 520–680 MW. Demand = 850 MW. Battery available = 120 MW. Backup available = 100 MW.<br><br>Deficit risk: <span class="risk-tag">HIGH</span>. Prepare additional flexibility.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="loop">
+    <p class="eyebrow">The Intelligence Loop</p>
+    <h2 class="section-title">Forecast → understand risk → recommend action.</h2>
+    <p class="section-lede">Three engines, each answering one question a control room actually asks.</p>
+
+    <figure class="flow-figure">
+      <svg viewBox="0 0 900 150" role="img" aria-label="Flow diagram: Forecast engine estimates generation, an arrow labeled plus uncertainty and flexibility leads to the Risk engine which classifies surplus or deficit exposure, an arrow labeled plus operational thresholds leads to the Decision engine which ranks a recommended action.">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <polygon points="0 0, 8 4, 0 8" fill="currentColor" fill-opacity="0.55"/>
+            </marker>
+          </defs>
+          <rect x="20" y="35" width="230" height="80" rx="10" fill="none" stroke="var(--accent-solar)" stroke-width="2"/>
+          <text x="135" y="68" text-anchor="middle" class="mono" font-size="14" font-weight="600" fill="var(--accent-solar)">FORECAST</text>
+          <text x="135" y="90" text-anchor="middle" class="mono" font-size="11" fill="currentColor" fill-opacity="0.6">expected generation, 24–72h</text>
+
+          <line x1="255" y1="75" x2="330" y2="75" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="292" y="65" text-anchor="middle" class="mono" font-size="10" fill="currentColor" fill-opacity="0.6">+ uncertainty</text>
+
+          <rect x="335" y="35" width="230" height="80" rx="10" fill="none" stroke="var(--accent-grid)" stroke-width="2"/>
+          <text x="450" y="68" text-anchor="middle" class="mono" font-size="14" font-weight="600" fill="var(--accent-grid)">RISK</text>
+          <text x="450" y="90" text-anchor="middle" class="mono" font-size="11" fill="currentColor" fill-opacity="0.6">surplus / deficit exposure</text>
+
+          <line x1="570" y1="75" x2="645" y2="75" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="607" y="65" text-anchor="middle" class="mono" font-size="10" fill="currentColor" fill-opacity="0.6">+ flexibility</text>
+
+          <rect x="650" y="35" width="230" height="80" rx="10" fill="none" stroke="var(--risk-high)" stroke-width="2"/>
+          <text x="765" y="68" text-anchor="middle" class="mono" font-size="14" font-weight="600" fill="var(--risk-high)">ACTION</text>
+          <text x="765" y="90" text-anchor="middle" class="mono" font-size="11" fill="currentColor" fill-opacity="0.6">ranked recommendation</text>
+      </svg>
+      <figcaption>The decision engine only fires once uncertainty and grid flexibility have both been folded into the forecast.</figcaption>
+    </figure>
+
+    <div class="loop-steps">
+      <div class="loop-step">
+        <span class="loop-num">01</span>
+        <h3>Forecast</h3>
+        <p>Persistence baseline and XGBoost estimate solar (and later wind) output for every future interval, 24–72 hours ahead.</p>
+      </div>
+      <div class="loop-step">
+        <span class="loop-num">02</span>
+        <h3>Risk</h3>
+        <p>Forecast uncertainty is weighed against demand, battery headroom, export limits and backup capacity to classify exposure.</p>
+      </div>
+      <div class="loop-step">
+        <span class="loop-num">03</span>
+        <h3>Action</h3>
+        <p>Charge storage, export, shift load, curtail as last resort — or discharge, prepare backup, escalate. Ranked, not guessed.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboard">
+    <p class="eyebrow">Operator View</p>
+    <h2 class="section-title">What the control room actually sees.</h2>
+    <p class="section-lede">Illustrative screen — current state, forecast, risk timeline and a ranked action, all before the surplus arrives.</p>
+
+    <div class="dash-mock">
+      <div class="dash-mock-bar">
+        <span class="dash-mock-dot"></span><span class="dash-mock-dot"></span><span class="dash-mock-dot"></span>
+        <span class="dash-mock-title">intelligen — grid overview</span>
+      </div>
+      <div class="dash-mock-body">
+        <div class="status-row">
+          <div class="status-card"><div class="k">Current Gen.</div><div class="v">780 MW</div></div>
+          <div class="status-card"><div class="k">Forecast @14:00</div><div class="v">820 MW</div></div>
+          <div class="status-card risk"><div class="k">Risk</div><div class="v">HIGH</div></div>
+          <div class="status-card"><div class="k">Action</div><div class="v" style="font-size:16px;">Charge storage</div></div>
+        </div>
+
+        <div class="timeline">
+          <span class="k">Risk timeline — next 24h</span>
+          <div class="timeline-track">
+            <i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i>
+            <i style="background:var(--risk-medium)"></i><i style="background:var(--risk-medium)"></i>
+            <i style="background:var(--risk-high)"></i><i style="background:var(--risk-high)"></i><i style="background:var(--risk-high)"></i>
+            <i style="background:var(--risk-medium)"></i>
+            <i style="background:var(--risk-critical)"></i><i style="background:var(--risk-critical)"></i><i style="background:var(--risk-critical)"></i>
+            <i style="background:var(--risk-high)"></i><i style="background:var(--risk-medium)"></i>
+            <i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i><i style="background:var(--risk-low)"></i>
+          </div>
+          <div class="timeline-hours"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+        </div>
+
+        <div class="rec-card">
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <span class="rec-tag">HIGH SURPLUS RISK</span>
+            <span class="rec-window">WINDOW 13:30–15:00</span>
+          </div>
+          <p>Expected surplus <b>+250 MW</b> — storage absorbs 100 MW, export absorbs 50 MW. Residual exposure: <b>100 MW</b>.</p>
+          <ul class="rec-steps">
+            <li><b>1</b>Charge storage</li>
+            <li><b>2</b>Maximize export</li>
+            <li><b>3</b>Evaluate flexible demand</li>
+            <li><b>4</b>Curtail residual</li>
+          </ul>
+          <div class="why-chips">
+            <span>forecast driver</span><span>demand level</span><span>storage headroom</span><span>export limit</span><span>uncertainty range</span><span>trigger threshold</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="scenario">
+    <p class="eyebrow">What-If</p>
+    <h2 class="section-title">Test the assumption before the grid does.</h2>
+    <p class="section-lede">The scenario simulator recalculates risk and flexibility requirements live when an operator changes one input.</p>
+
+    <span class="scenario-toggle"><span class="dial"></span>solar output −30% at 16:00</span>
+
+    <div class="scenario-grid">
+      <div class="scenario-card">
+        <h4>Base Case</h4>
+        <div class="metric-row"><span class="m-label">Forecast</span><span class="m-value">800 MW</span></div>
+        <div class="metric-row"><span class="m-label">Risk</span><span class="m-value">Medium</span></div>
+        <div class="metric-row"><span class="m-label">Storage required</span><span class="m-value">80 MW</span></div>
+        <div class="metric-row"><span class="m-label">Backup</span><span class="m-value">—</span></div>
+      </div>
+      <div class="scenario-card whatif">
+        <h4>What-If</h4>
+        <div class="metric-row"><span class="m-label">Forecast</span><span class="m-value crit">560 MW</span></div>
+        <div class="metric-row"><span class="m-label">Risk</span><span class="m-value crit">High</span></div>
+        <div class="metric-row"><span class="m-label">Storage required</span><span class="m-value crit">150 MW</span></div>
+        <div class="metric-row"><span class="m-label">Backup</span><span class="m-value crit">Required</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <p class="eyebrow">Why Not Just Another Forecast</p>
+    <h2 class="section-title">The layer everyone skips.</h2>
+    <p class="section-lede">Forecasting renewables isn't new. Connecting the forecast, its uncertainty and the grid's real flexibility into one recommendation is.</p>
+    <div class="compare-list">
+      <div class="compare-row"><span class="old">Forecast generation</span><span class="arrow">→</span><span class="new">Forecast generation + uncertainty</span></div>
+      <div class="compare-row"><span class="old">Display predicted output</span><span class="arrow">→</span><span class="new">Translate output into operational risk</span></div>
+      <div class="compare-row"><span class="old">Generic alerts</span><span class="arrow">→</span><span class="new">Context-aware risk assessment</span></div>
+      <div class="compare-row"><span class="old">Static forecast</span><span class="arrow">→</span><span class="new">Interactive scenario simulation</span></div>
+      <div class="compare-row"><span class="old">Prediction only</span><span class="arrow">→</span><span class="new">Prediction → recommendation</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="boundary-note">
+      <span>⚠</span>
+      <span><b>Decision-support, not autonomous control.</b> IntelliGen never touches generators, batteries or grid infrastructure directly — it forecasts, assesses risk, and recommends. The authorized operator makes the call.</span>
+    </div>
+    <div class="footer-row">
+      <span>Team IntelliGen — HACKOUT '26 Ideation Submission</span>
+      <a href="https://github.com/amitpamnani205/Team-IntelliGen">github.com/amitpamnani205/Team-IntelliGen</a>
+    </div>
+  </footer>
+
+</div>
